@@ -1,24 +1,14 @@
-use std::{error::Error, fs};
-
-pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
-    let contents = fs::read_to_string(config.file_path)?;
-
-    for line in search(&config.query, &contents) {
-        println!("{line}");
-    }
-
-    Ok(())
-}
+use std::error::Error;
+use std::fs;
 
 pub struct Config {
     pub query: String,
-    pub file_path: String,
-    pub ignore_case: bool,
+    pub file_path: String,  
 }
 
-
 impl Config {
-    pub fn build(args: &[String]) -> Result<Self, &'static str> {
+    // a constructor to parse the args
+    pub fn build(args: &[String]) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err("not enough arguments");
         }
@@ -26,25 +16,31 @@ impl Config {
         let query = args[1].clone();
         let file_path = args[2].clone();
 
-        let ignore_case = std::env::var("IGNORE_CASE").is_ok();
-
-        Ok(Self {
-            query,
-            file_path,
-            ignore_case,
-        })
+        Ok(Config { query, file_path } )
     }
 }
 
-pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    contents.lines()
-    .filter(|line| line.contains(query))
-    .collect()
+// Box<dyn Error> allows us to return any type of error
+pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
+    let contents = fs::read_to_string(config.file_path)?;
+
+    // iterate over the results and print lines that match
+    for line in search(&config.query, &contents) {
+        println!("{}", line);
+    }
+
+    Ok(())
 }
 
-pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let query = query.to_lowercase();
-    contents.lines()
-    .filter(|line| line.to_lowercase().contains(&query))
-    .collect()
+
+pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let mut results = Vec::new();
+
+    for line in contents.lines() {
+        if line.contains(query) {
+            results.push(line);
+        }
+    }
+
+    results
 }
